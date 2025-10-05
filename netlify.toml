@@ -1,20 +1,17 @@
+# Configurações de build para projetos Vite
 [build]
   command = "npm run build"
   publish = "dist"
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-
-[dev]
-  framework = "vite"
-  command = "npm run dev"
-  targetPort = 5173
-  port = 8888
-  autoLaunch = true
-  envFiles = [".env.local"]  # ✅ ESSA LINHA CARREGA VARIÁVEIS DO .env.local
-
+# Regra para servir diretamente os arquivos de exercícios (pasta public/exercises)
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/exercises/*"
+  to = "/exercises/:splat"
+  status = 200
+  force = true
+
+# Regra geral para SPA (React Router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200

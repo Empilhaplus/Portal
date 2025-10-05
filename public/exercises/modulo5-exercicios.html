@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo 5 - Exercícios: Perfis DISC</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #272525;
+            color: white;
+        }
+        .container {
+            background: #1E1E1E;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border: 1px solid #444;
+        }
+        h1 {
+            color: #0AFF0F;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .question {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #272525;
+            border-radius: 8px;
+            border-left: 4px solid #0AFF0F;
+        }
+        .question h3 {
+            margin-top: 0;
+            color: white;
+            font-size: 18px;
+        }
+        .options {
+            margin: 15px 0;
+        }
+        .option {
+            margin: 10px 0;
+            padding: 12px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #1E1E1E;
+        }
+        .option:hover {
+            background: #333;
+            border-color: #0AFF0F;
+        }
+        .option.selected {
+            background: #0AFF0F;
+            color: black;
+            border-color: #0AFF0F;
+            font-weight: bold;
+        }
+        .option.correct {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        .option.incorrect {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        .btn {
+            background: #0AFF0F;
+            color: black;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background 0.3s ease;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #08cc0c;
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: black;
+        }
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .score {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #0AFF0F;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Módulo 5 - Exercícios: Perfis Comportamentais DISC</h1>
+        
+        <div class="question" data-question="1">
+            <h3>Questão 1: Qual perfil DISC é caracterizado por ser direto, focado em resultados e orientado para desafios?</h3>
+            <div class="options">
+                <div class="option" data-answer="a">a) Influência (I)</div>
+                <div class="option" data-answer="b">b) Estabilidade (S)</div>
+                <div class="option" data-answer="c">c) Dominância (D)</div>
+                <div class="option" data-answer="d">d) Conformidade (C)</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="2">
+            <h3>Questão 2: Um cliente que constantemente pede referências e busca segurança provavelmente tem perfil:</h3>
+            <div class="options">
+                <div class="option" data-answer="a">a) Dominância (D)</div>
+                <div class="option" data-answer="b">b) Influência (I)</div>
+                <div class="option" data-answer="c">c) Estabilidade (S)</div>
+                <div class="option" data-answer="d">d) Conformidade (C)</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="3">
+            <h3>Questão 3: Qual a melhor abordagem para um cliente Perfil I (Influência)?</h3>
+            <div class="options">
+                <div class="option" data-answer="a">a) Focar em dados técnicos</div>
+                <div class="option" data-answer="b">b) Ser direto e objetivo</div>
+                <div class="option" data-answer="c">c) Usar entusiasmo e prova social</div>
+                <div class="option" data-answer="d">d) Dar tempo para análise</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="4">
+            <h3>Questão 4: A principal motivação de um Perfil C (Conformidade) é:</h3>
+            <div class="options">
+                <div class="option" data-answer="a">a) Reconhecimento social</div>
+                <div class="option" data-answer="b">b) Controle e poder</div>
+                <div class="option" data-answer="c">c) Harmonia e estabilidade</div>
+                <div class="option" data-answer="d">d) Qualidade e precisão</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="5">
+            <h3>Questão 5: Qual é o maior medo de um Perfil D (Dominância)?</h3>
+            <div class="options">
+                <div class="option" data-answer="a">a) Rejeição social</div>
+                <div class="option" data-answer="b">b) Perder controle</div>
+                <div class="option" data-answer="c">c) Mudanças súbitas</div>
+                <div class="option" data-answer="d">d) Cometer erros</div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn" onclick="checkAnswers()">Verificar Respostas</button>
+            <button class="btn" onclick="resetQuiz()" style="background: #6c757d;">Reiniciar</button>
+        </div>
+
+        <div id="result" class="result" style="display: none;"></div>
+        <div id="score" class="score" style="display: none;"></div>
+    </div>
+
+    <script>
+        // --- SCRIPT COMPLETO E CORRIGIDO ---
+
+        // GABARITO PARA AS RESPOSTAS DO MÓDULO 5
+        const correctAnswers = {
+            '1': 'c',
+            '2': 'c', 
+            '3': 'c',
+            '4': 'd',
+            '5': 'b'
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const moduleId = urlParams.get('moduleId');
+        const storageKey = `quiz_answers_module_${moduleId}`;
+
+        function saveAnswer(questionNum, answer) {
+            const answers = JSON.parse(localStorage.getItem(storageKey)) || {};
+            answers[questionNum] = answer;
+            localStorage.setItem(storageKey, JSON.stringify(answers));
+        }
+
+        function loadAnswers() {
+            const savedAnswers = JSON.parse(localStorage.getItem(storageKey));
+            if (savedAnswers) {
+                Object.keys(savedAnswers).forEach(questionNum => {
+                    const answer = savedAnswers[questionNum];
+                    const question = document.querySelector(`[data-question="${questionNum}"]`);
+                    if (question) {
+                        const optionToSelect = question.querySelector(`[data-answer="${answer}"]`);
+                        if (optionToSelect) {
+                            question.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                            optionToSelect.classList.add('selected');
+                        }
+                    }
+                });
+            }
+        }
+
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', function() {
+                const questionDiv = this.closest('.question');
+                const questionNum = questionDiv.getAttribute('data-question');
+                const answer = this.getAttribute('data-answer');
+                
+                questionDiv.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                saveAnswer(questionNum, answer);
+            });
+        });
+
+        function checkAnswers() {
+            let score = 0;
+            const totalQuestions = Object.keys(correctAnswers).length;
+            
+            Object.keys(correctAnswers).forEach(questionNum => {
+                const question = document.querySelector(`[data-question="${questionNum}"]`);
+                const selectedOption = question.querySelector('.option.selected');
+                const correctAnswer = correctAnswers[questionNum];
+                
+                if (selectedOption) {
+                    const selectedAnswer = selectedOption.getAttribute('data-answer');
+                    if (selectedAnswer === correctAnswer) {
+                        selectedOption.classList.add('correct');
+                        score++;
+                    } else {
+                        selectedOption.classList.add('incorrect');
+                        const correctOption = question.querySelector(`[data-answer="${correctAnswer}"]`);
+                        correctOption.classList.add('correct');
+                    }
+                }
+            });
+
+            const resultDiv = document.getElementById('result');
+            const scoreDiv = document.getElementById('score');
+            
+            if (score === totalQuestions) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '🎉 Perfeito! Você domina os Perfis DISC!';
+            } else if (score >= totalQuestions * 0.7) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '👏 Muito bem! Você entende bem os Perfis DISC!';
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '📚 Continue estudando! Revise os conceitos dos Perfis DISC.';
+            }
+            
+            scoreDiv.textContent = `Pontuação: ${score}/${totalQuestions} (${Math.round((score/totalQuestions)*100)}%)`;
+            resultDiv.style.display = 'block';
+            scoreDiv.style.display = 'block';
+
+            enviarResultadoParaPortal(score, totalQuestions);
+        }
+
+        function resetQuiz() {
+            document.querySelectorAll('.option').forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('score').style.display = 'none';
+            localStorage.removeItem(storageKey);
+        }
+
+        function enviarResultadoParaPortal(pontos, totalDeQuestoes) {
+            if (!moduleId) {
+                console.error("ID do Módulo não foi encontrado.");
+                return;
+            }
+            const resultado = {
+                type: 'exerciseResult',
+                payload: { moduleId: parseInt(moduleId, 10), score: pontos, totalQuestions: totalDeQuestoes }
+            };
+            const portalOrigin = window.location.protocol + "//" + window.location.host;
+            console.log(`[PASSO 1 de 3] O Quiz do Módulo ${moduleId} está ENVIANDO a pontuação:`, resultado, 'para a origem:', portalOrigin);
+            window.parent.postMessage(resultado, portalOrigin); 
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAnswers);
+    </script>
+</body>
+</html>
