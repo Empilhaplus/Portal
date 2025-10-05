@@ -19,6 +19,7 @@ const McqQuestion: React.FC<{
   isSubmitted: boolean; onAnswerChange: (answer: string) => void;
 }> = ({ questionData, index, selectedAnswer, isSubmitted, onAnswerChange }) => {
   const isCorrect = selectedAnswer === questionData.correctAnswer;
+  // <<< CORREÇÃO: Adicionado o 'return' >>>
   return (
     <div className="mb-6 bg-background/50 p-4 rounded-lg">
       <p className="font-bold mb-2">{index + 1}. {questionData.question}</p>
@@ -51,6 +52,7 @@ const TrueFalseQuestion: React.FC<{
     isSubmitted: boolean; onAnswerChange: (answer: string) => void;
 }> = ({ questionData, index, selectedAnswer, isSubmitted, onAnswerChange }) => {
     const isCorrect = String(questionData.correctAnswer) === selectedAnswer;
+    // <<< CORREÇÃO: Adicionado o 'return' >>>
     return (
       <div className="mb-6 bg-background/50 p-4 rounded-lg">
           <p className="font-bold mb-2">{index + 1}. (V/F) {questionData.statement}</p>
@@ -72,8 +74,8 @@ const TrueFalseQuestion: React.FC<{
           </div>
           {isSubmitted && <p className="text-sm mt-3 text-text-secondary border-t border-gray-700 pt-2">Explicação: {questionData.explanation}</p>}
       </div>
-    )
-}
+    );
+};
 
 export const LessonExercise: React.FC<LessonExerciseProps> = ({ lessonId, exerciseData, isFullscreen }) => {
   if (!exerciseData || exerciseData.length === 0) {
@@ -89,10 +91,20 @@ export const LessonExercise: React.FC<LessonExerciseProps> = ({ lessonId, exerci
       if (!user || !lessonId) return;
       setIsSubmitted(false);
       setSelectedAnswers({});
-      const { data, error } = await supabase.from('user_lesson_answers').select('selected_answer').eq('user_id', user.id).eq('lesson_id', lessonId).single();
-      if(error && error.code !== 'PGRST116') console.error("Erro ao buscar respostas:", error);
-      if (data && data.selected_answer) {
-        setSelectedAnswers(data.selected_answer as Record<number, string>);
+      
+      const { data, error } = await supabase
+        .from('user_lesson_answers')
+        .select('selected_answer')
+        .eq('user_id', user.id)
+        .eq('lesson_id', lessonId);
+
+      if(error) {
+        console.error("Erro ao buscar respostas:", error);
+        return;
+      }
+      
+      if (data && data.length > 0 && data[0].selected_answer) {
+        setSelectedAnswers(data[0].selected_answer as Record<number, string>);
         setIsSubmitted(true);
       }
     };

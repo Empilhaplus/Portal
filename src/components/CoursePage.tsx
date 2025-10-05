@@ -13,8 +13,7 @@ interface Course { id: string; title: string; description: string; modules: Modu
 export const CoursePage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  // <<< ALTERAÇÃO 1: OBTER A FUNÇÃO refreshUser DO CONTEXTO >>>
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -22,6 +21,8 @@ export const CoursePage: React.FC = () => {
   const [showExercises, setShowExercises] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // <<< NOVO ESTADO PARA CONTROLE DO LAYOUT MOBILE >>>
+  const [showContentMobile, setShowContentMobile] = useState(false);
 
   useEffect(() => {
     if (!courseId || !user) return;
@@ -38,8 +39,7 @@ export const CoursePage: React.FC = () => {
 
       if (courseError) {
         console.error('Erro ao buscar dados do curso:', courseError);
-        setLoading(false);
-        return;
+        setLoading(false); return;
       }
       
       if (courseData) {
@@ -70,43 +70,14 @@ export const CoursePage: React.FC = () => {
     fetchCourseData();
   }, [courseId, user]);
 
-  const POINTS_PER_LESSON = 10;
-
   const handleMarkAsCompleted = async () => {
     if (!user || !selectedLesson || completedLessons.has(selectedLesson.id)) return;
-    
     const { error } = await supabase.from('user_lesson_progress').insert({ user_id: user.id, lesson_id: selectedLesson.id });
-
-    if (error) {
-      alert("Erro ao salvar progresso.");
-      return;
-    }
-    
-    setCompletedLessons(prev => new Set(prev).add(selectedLesson.id));
-    
-    // <<< ALTERAÇÃO 2: CAPTURAR O NOVO NÍVEL RETORNADO PELA FUNÇÃO >>>
-    const { data: newLevel, error: pointsError } = await supabase.rpc('increment_user_points', {
-      user_id_param: user.id,
-      points_to_add: POINTS_PER_LESSON
-    });
-
-    if (pointsError) {
-      console.error('Erro ao adicionar pontos de gamificação:', pointsError);
-    } else {
-      // <<< ALTERAÇÃO 3: LÓGICA PARA EXIBIR ALERTA DE LEVEL UP >>>
-      // Compara o novo nível (retornado pela função) com o nível atual do usuário
-      if (newLevel > user.level) {
-        alert(`✨ LEVEL UP! ✨\n\nParabéns, você alcançou o Nível ${newLevel}!`);
-      } else {
-        alert(`Ótimo trabalho! Você ganhou ${POINTS_PER_LESSON} pontos.`);
-      }
-      // Atualiza os dados do usuário na tela (pontos e nível)
-      await refreshUser();
-    }
+    if (error) alert("Erro ao salvar progresso.");
+    else setCompletedLessons(prev => new Set(prev).add(selectedLesson.id));
   };
 
   const currentModule = course?.modules.find(module => module.lessons.some(lesson => lesson.id === selectedLesson?.id));
-  
   const totalLessons = course?.modules.reduce((acc, module) => acc + module.lessons.length, 0) || 0;
   const allLessonsCompleted = totalLessons > 0 && completedLessons.size >= totalLessons;
 
@@ -117,8 +88,14 @@ export const CoursePage: React.FC = () => {
     <div className={`bg-primary rounded-lg border border-gray-700 ${isFullscreen ? 'h-full flex flex-col' : ''}`}>
       <div className="p-4 border-b border-gray-700 flex justify-between items-center">
         <div className="flex items-center space-x-4">
-          <button onClick={() => setShowExercises(false)} className={!showExercises ? 'text-secondary font-bold' : 'text-text-secondary'}>Aula</button>
-          {selectedLesson?.exercise_data && <button onClick={() => setShowExercises(true)} className={showExercises ? 'text-secondary font-bold' : 'text-text-secondary'}>Exercícios da Aula</button>}
+          {/* <<< BOTÃO DE VOLTAR PARA A LISTA NO MOBILE >>> */}
+          <button onClick={() => setShowContentMobile(false)} className="lg:hidden flex items-center text-text-secondary hover:text-white">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Aulas
+          </button>
+          <div className="hidden lg:flex items-center space-x-4">
+            <button onClick={() => setShowExercises(false)} className={!showExercises ? 'text-secondary font-bold' : 'text-text-secondary'}>Aula</button>
+            {selectedLesson?.exercise_data && <button onClick={() => setShowExercises(true)} className={showExercises ? 'text-secondary font-bold' : 'text-text-secondary'}>Exercícios da Aula</button>}
+          </div>
         </div>
         <button onClick={() => setIsFullscreen(!isFullscreen)} title="Tela Cheia" className="p-1 text-text-secondary hover:text-white">
           {isFullscreen ? <Minimize2 size={18}/> : <Maximize2 size={18}/>}
@@ -129,22 +106,24 @@ export const CoursePage: React.FC = () => {
           <iframe src={currentModule?.iframe_url || ''} className="w-full h-full" frameBorder="0" allowFullScreen title={`Módulo - ${currentModule?.title}`} />
         </div>
         <div className={`p-6 ${isFullscreen ? 'flex-1 overflow-y-auto' : ''} ${!showExercises ? 'hidden' : ''}`}>
-          {selectedLesson?.exercise_data ? (
-            <LessonExercise 
-              lessonId={selectedLesson.id} 
-              exerciseData={selectedLesson.exercise_data}
-              isFullscreen={isFullscreen} 
-            />
-          ) : <p className="text-text-secondary">Não há exercícios para esta aula.</p>}
+          {selectedLesson?.exercise_data ? ( <LessonExercise lessonId={selectedLesson.id} exerciseData={selectedLesson.exercise_data} isFullscreen={isFullscreen} /> ) : <p className="text-text-secondary">Não há exercícios para esta aula.</p>}
         </div>
       </div>
+      {/* <<< NAVEGAÇÃO MOBILE INFERIOR >>> */}
+      {selectedLesson?.exercise_data && (
+          <div className="lg:hidden p-3 border-t border-gray-700 flex justify-around items-center">
+              <button onClick={() => setShowExercises(false)} className={`py-2 px-4 rounded-md ${!showExercises ? 'bg-secondary/20 text-secondary font-bold' : 'text-text-secondary'}`}>Aula</button>
+              <button onClick={() => setShowExercises(true)} className={`py-2 px-4 rounded-md ${showExercises ? 'bg-secondary/20 text-secondary font-bold' : 'text-text-secondary'}`}>Exercícios</button>
+          </div>
+      )}
     </div>
   );
 
   return (
     <>
       <div className={`flex-col lg:flex-row gap-8 text-white ${isFullscreen ? 'hidden' : 'flex'}`}>
-        <div className="lg:w-1/3 bg-primary p-6 rounded-lg self-start sticky top-24">
+        {/* <<< LÓGICA DE EXIBIÇÃO PARA O PAINEL DE AULAS >>> */}
+        <div className={`${showContentMobile ? 'hidden' : 'block'} lg:block lg:w-1/3 bg-primary p-6 rounded-lg self-start lg:sticky top-24`}>
             <button onClick={() => navigate('/')} className="flex items-center text-text-secondary hover:text-white mb-4">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar para os treinamentos
@@ -159,14 +138,14 @@ export const CoursePage: React.FC = () => {
                 <div className="bg-secondary h-2.5 rounded-full" style={{ width: `${totalLessons > 0 ? (completedLessons.size / totalLessons) * 100 : 0}%` }}></div>
               </div>
             </div>
-            <div className="space-y-6 max-h-[45vh] overflow-y-auto pr-2">
+            <div className="space-y-6 max-h-[45vh] lg:max-h-none overflow-y-auto pr-2">
                 {course.modules.map((module) => (
                     <div key={module.id}>
                         <h3 className="font-bold text-text-primary mb-3 text-lg">{module.title}</h3>
                         <ul className="space-y-2 pl-4 border-l-2 border-gray-700">
                             {module.lessons.map((lesson) => (
                               <li key={lesson.id}>
-                                  <button onClick={() => { setSelectedLesson(lesson); setShowExercises(false); }} className={`w-full text-left flex items-start space-x-3 p-3 rounded-md transition-colors ${selectedLesson?.id === lesson.id ? 'bg-secondary/20 text-secondary' : 'hover:bg-background/50'}`}>
+                                  <button onClick={() => { setSelectedLesson(lesson); setShowExercises(false); setShowContentMobile(true); }} className={`w-full text-left flex items-start space-x-3 p-3 rounded-md transition-colors ${selectedLesson?.id === lesson.id ? 'bg-secondary/20 text-secondary' : 'hover:bg-background/50'}`}>
                                       <CheckCircle size={16} className={`mt-1 flex-shrink-0 transition-colors ${completedLessons.has(lesson.id) ? 'text-green-500' : 'text-gray-600'}`} />
                                       <div>
                                           <p className="font-semibold">{lesson.title}</p>
@@ -186,13 +165,13 @@ export const CoursePage: React.FC = () => {
                     </Link>
                 ) : (
                     <button disabled className="w-full text-center flex items-center justify-center gap-2 bg-gray-700 text-text-secondary font-bold py-3 px-6 rounded-lg cursor-not-allowed">
-                        <Lock size={16} />
-                        Conclua todas as aulas para liberar o teste
+                        <Lock size={16} /> Conclua todas as aulas para liberar o teste
                     </button>
                 )}
             </div>
         </div>
-        <div className="lg:w-2/3">
+        {/* <<< LÓGICA DE EXIBIÇÃO PARA O CONTEÚDO DA AULA >>> */}
+        <div className={`${showContentMobile ? 'block' : 'hidden'} lg:block lg:w-2/3`}>
             {selectedLesson && currentModule ? (
                 <div>
                     {renderContent()}
@@ -209,11 +188,7 @@ export const CoursePage: React.FC = () => {
             )}
         </div>
       </div>
-      {isFullscreen && (
-        <div className="fixed inset-0 bg-background z-50 p-4">
-            {renderContent()}
-        </div>
-      )}
+      {isFullscreen && ( <div className="fixed inset-0 bg-background z-50 p-4"> {renderContent()} </div> )}
     </>
   );
 };
