@@ -37,10 +37,10 @@ const LoginPage: React.FC = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-[#272525] p-8 rounded-2xl shadow-lg border border-gray-700 w-full max-w-md"
+        className="bg-[#272525] p-8 rounded-2xl shadow-lg border border-yellow-700 w-full max-w-md"
       >
         <h2 className="text-3xl font-bold text-center text-white mb-6">
-          Acesso ao Portal Método VAP
+          Portal Empilha Plus
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -57,7 +57,7 @@ const LoginPage: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               // A MUDANÇA ESTÁ AQUI: adicionei "text-white"
-              className="w-full px-4 py-2 rounded bg-[#1E1E1E] border border-gray-600 focus:outline-none focus:border-[#0AFF0F] text-white"
+              className="w-full px-4 py-2 rounded bg-[#1E1E1E] border border-gray-600 focus:outline-none focus:border-[#fbbf24] text-white"
               placeholder="seu@email.com"
             />
           </div>
@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full bg-[#0AFF0F] text-black font-semibold py-2 rounded hover:bg-[#0aff0fc5] transition-colors"
+            className="w-full bg-secondary text-black font-semibold py-2 rounded hover:bg-[#0AFF0F] transition-colors"
             disabled={loading}
           >
             {loading ? 'Entrando...' : 'Entrar'}

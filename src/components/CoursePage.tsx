@@ -13,7 +13,7 @@ interface Course { id: string; title: string; description: string; modules: Modu
 export const CoursePage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth(); // <<< Adicionado refreshUser aqui
 
   const [course, setCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -21,7 +21,6 @@ export const CoursePage: React.FC = () => {
   const [showExercises, setShowExercises] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
-  // <<< NOVO ESTADO PARA CONTROLE DO LAYOUT MOBILE >>>
   const [showContentMobile, setShowContentMobile] = useState(false);
 
   useEffect(() => {
@@ -72,9 +71,32 @@ export const CoursePage: React.FC = () => {
 
   const handleMarkAsCompleted = async () => {
     if (!user || !selectedLesson || completedLessons.has(selectedLesson.id)) return;
+
+    // Salva o progresso
     const { error } = await supabase.from('user_lesson_progress').insert({ user_id: user.id, lesson_id: selectedLesson.id });
-    if (error) alert("Erro ao salvar progresso.");
-    else setCompletedLessons(prev => new Set(prev).add(selectedLesson.id));
+
+    if (error) {
+      alert("Erro ao salvar progresso.");
+      return;
+    }
+
+    setCompletedLessons(prev => new Set(prev).add(selectedLesson.id));
+
+    // <<< ALTERAÇÃO PARA DEPURAÇÃO >>>
+    // Tenta adicionar os pontos
+    const { error: pointsError } = await supabase.rpc('increment_user_points', {
+      user_id_param: user.id,
+      points_to_add: 10
+    });
+
+    // Se houver um erro ao adicionar pontos, exibe um alerta
+    if (pointsError) {
+      alert('O progresso da aula foi salvo, mas houve um erro ao adicionar os pontos. Verifique o console para mais detalhes (F12).');
+      console.error('Erro ao chamar a função de pontos (RPC):', pointsError);
+    } else {
+      // Se deu tudo certo, atualiza os dados do usuário na tela
+      await refreshUser();
+    }
   };
 
   const currentModule = course?.modules.find(module => module.lessons.some(lesson => lesson.id === selectedLesson?.id));
@@ -88,7 +110,6 @@ export const CoursePage: React.FC = () => {
     <div className={`bg-primary rounded-lg border border-gray-700 ${isFullscreen ? 'h-full flex flex-col' : ''}`}>
       <div className="p-4 border-b border-gray-700 flex justify-between items-center">
         <div className="flex items-center space-x-4">
-          {/* <<< BOTÃO DE VOLTAR PARA A LISTA NO MOBILE >>> */}
           <button onClick={() => setShowContentMobile(false)} className="lg:hidden flex items-center text-text-secondary hover:text-white">
             <ArrowLeft className="w-4 h-4 mr-2" /> Aulas
           </button>
@@ -109,7 +130,6 @@ export const CoursePage: React.FC = () => {
           {selectedLesson?.exercise_data ? ( <LessonExercise lessonId={selectedLesson.id} exerciseData={selectedLesson.exercise_data} isFullscreen={isFullscreen} /> ) : <p className="text-text-secondary">Não há exercícios para esta aula.</p>}
         </div>
       </div>
-      {/* <<< NAVEGAÇÃO MOBILE INFERIOR >>> */}
       {selectedLesson?.exercise_data && (
           <div className="lg:hidden p-3 border-t border-gray-700 flex justify-around items-center">
               <button onClick={() => setShowExercises(false)} className={`py-2 px-4 rounded-md ${!showExercises ? 'bg-secondary/20 text-secondary font-bold' : 'text-text-secondary'}`}>Aula</button>
@@ -122,7 +142,6 @@ export const CoursePage: React.FC = () => {
   return (
     <>
       <div className={`flex-col lg:flex-row gap-8 text-white ${isFullscreen ? 'hidden' : 'flex'}`}>
-        {/* <<< LÓGICA DE EXIBIÇÃO PARA O PAINEL DE AULAS >>> */}
         <div className={`${showContentMobile ? 'hidden' : 'block'} lg:block lg:w-1/3 bg-primary p-6 rounded-lg self-start lg:sticky top-24`}>
             <button onClick={() => navigate('/')} className="flex items-center text-text-secondary hover:text-white mb-4">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -170,7 +189,6 @@ export const CoursePage: React.FC = () => {
                 )}
             </div>
         </div>
-        {/* <<< LÓGICA DE EXIBIÇÃO PARA O CONTEÚDO DA AULA >>> */}
         <div className={`${showContentMobile ? 'block' : 'hidden'} lg:block lg:w-2/3`}>
             {selectedLesson && currentModule ? (
                 <div>

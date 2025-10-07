@@ -22,6 +22,7 @@ interface ModuleTest {
 interface CourseInfo {
   title: string;
   syllabus: string[] | null;
+  duration_hours: number | null;
 }
 
 export const FinalTestPage: React.FC = () => {
@@ -58,14 +59,14 @@ export const FinalTestPage: React.FC = () => {
       if (testError) console.error("Erro ao buscar o teste:", testError);
       else setTest(testData);
 
-      const { data: courseData } = await supabase.from('courses').select('title, syllabus').eq('id', courseId).single();
+      const { data: courseData } = await supabase.from('courses').select('title, syllabus, duration_hours').eq('id', courseId).single();
       if(courseData) setCourse(courseData);
       
       setLoading(false);
     };
     fetchTestData();
   }, [courseId, user]);
-  
+ 
   const handleAnswerChange = (questionIndex: number, answerKey: string) => {
     setAnswers(prev => ({ ...prev, [questionIndex]: answerKey }));
   };
@@ -111,13 +112,13 @@ export const FinalTestPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
+ 
   const handleDownloadCertificatePDF = () => {
     if (!user || score === null) return;
     const courseTitle = course?.title || 'Curso';
     const syllabusItems = course?.syllabus?.map((item: string) => `<li>${item}</li>`).join('') || '<li>Conteúdo não disponível.</li>';
     const userCPF = user.cpf || 'CPF não preenchido';
-
+    const duration = course?.duration_hours || 10;
     const logoUrl = 'https://ckpbdoxtlopaiaupenqd.supabase.co/storage/v1/object/public/logo%20empilha%20plus/EMPILHA+PLUS.png';
     const instructorSignatureUrl = 'https://ckpbdoxtlopaiaupenqd.supabase.co/storage/v1/object/public/logo%20empilha%20plus/Assinatura%20Rodrigo.png';
 
@@ -125,52 +126,64 @@ export const FinalTestPage: React.FC = () => {
       <html>
         <head>
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap');
-            body { margin: 0; font-family: 'Roboto', sans-serif; }
-            .page { width: 11in; min-height: 8.5in; display: flex; flex-direction: column; position: relative; background-color: white; box-sizing: border-box; padding: 0.8in; }
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap');
+            body { margin: 0; font-family: 'Roboto', sans-serif; color: #333; background-color: white; }
+            
+            .page { width: 11in; height: 8.5in; display: flex; flex-direction: column; justify-content: space-between; border: 15px solid #0D2847; box-sizing: border-box; padding: 0.8in; }
             .page-break { page-break-before: always; }
-            .certificate-page { border: 15px solid #0D2847; text-align: center; justify-content: space-between; align-items: center; }
-            .cert-header { width: 100%; }
-            .cert-header img { max-width: 200px; margin-bottom: 20px; }
-            .cert-header h1 { font-family: 'Montserrat', sans-serif; font-size: 28px; color: #0D2847; margin: 0; }
-            .cert-body { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
-            .cert-body p { font-size: 1.1rem; color: #333; line-height: 1.6; margin: 15px 0; }
-            .student-name { font-family: 'Montserrat', sans-serif; font-size: 2.5rem; color: #FBBF24; margin: 10px 0; }
-            .cert-footer-wrapper { width: 100%; display: flex; justify-content: space-around; padding-top: 40px; }
-            .signature-block { width: 320px; text-align: center; }
-            .signature-line { border-top: 1px solid #333; position: relative; padding-top: 5px; }
-            .signature-img { position: absolute; left: 50%; transform: translateX(-50%); top: -40px; width: 150px; height: auto; }
-            .signature-block p { font-weight: bold; margin-top: 4px; }
-            .signature-block p, .signature-block span { margin-bottom: 2px; margin-top: 2px; font-size: 12px; }
-            .code-bottom { font-size: 11px; color: #777; font-family: monospace; margin-top: 20px; }
-            .syllabus-page { border: 15px solid #0D2847; }
-            .syllabus-page h2 { font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 700; color: #0D2847; border-bottom: 2px solid #FBBF24; padding-bottom: 10px; margin-bottom: 30px; }
-            .syllabus-page ul { list-style: none; padding: 0; text-align: left; }
-            .syllabus-page li { font-size: 14px; line-height: 1.8; margin-bottom: 10px; padding-left: 20px; position: relative; }
-            .syllabus-page li::before { content: '•'; color: #FBBF24; font-size: 20px; position: absolute; left: 0; top: -2px; }
+
+            .cert-header { text-align: center; margin-top: 0.3in; }
+            .cert-header img { max-width: 190px; margin-bottom: 12px; }
+            .cert-header h1 { font-family: 'Montserrat', sans-serif; font-size: 30px; letter-spacing: 1px; color: #0D2847; margin: 0; font-weight: 700; }
+
+            .cert-body { flex: 1; text-align: center; margin-top: 40px; margin-bottom: 60px; line-height: 1.7; }
+            .cert-body p { font-size: 1.1rem; margin: 10px auto; color: #333; max-width: 90%; }
+            .student-name { font-family: 'Montserrat', sans-serif; font-size: 2.3rem; color: #FBBF24; font-weight: 700; margin: 10px 0 20px 0; }
+
+            .cert-footer { display: flex; justify-content: space-around; align-items: flex-end; margin-top: 40px; }
+            .signature-block { width: 280px; text-align: center; }
+            .signature-line { border-top: 1px solid #444; position: relative; padding-top: 5px; margin-bottom: 5px; }
+            .signature-img { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); width: 140px; opacity: 0.95; }
+            .signature-block p { margin: 0; font-weight: 600; font-size: 13px; }
+            .signature-block span { font-size: 11px; color: #555; }
+
+            .code-bottom { text-align: center; font-size: 11px; color: #777; margin-top: 20px; font-family: monospace; }
+
+            .syllabus-page { border: 15px solid #0D2847; padding: 0.8in; box-sizing: border-box; }
+            .syllabus-header { text-align: center; margin-top: 0.3in; margin-bottom: 0.2in; }
+            .syllabus-header img { max-width: 150px; }
+            .syllabus-page h2 { font-family: 'Montserrat', sans-serif; font-size: 26px; color: #0D2847; border-bottom: 2px solid #FBBF24; padding-bottom: 10px; margin-bottom: 25px; text-align: center; }
+            .syllabus-page ul { max-width: 85%; margin: 0 auto; padding: 0; list-style: none; }
+            .syllabus-page li { font-size: 14px; margin-bottom: 10px; padding-left: 18px; position: relative; }
+            .syllabus-page li::before { content: '•'; color: #FBBF24; position: absolute; left: 0; top: -2px; font-size: 20px; }
           </style>
         </head>
         <body>
           <div>
-            <div class="page certificate-page">
+            <div class="page">
               <div class="cert-header">
-                <img src="${logoUrl}" alt="Logo Empilha+Plus" />
+                <img src="${logoUrl}" alt="Logo Empilha Plus" />
                 <h1>CERTIFICADO DE CONCLUSÃO</h1>
               </div>
-              <div class="cert-body">
+
+               <div class="cert-body">
                 <p>Certificamos que</p>
                 <p class="student-name">${user.name}</p>
-                <p>concluiu com sucesso o treinamento de</p>
-                <p><strong>${courseTitle}</strong></p>
-                <p>Concluído em ${new Date().toLocaleDateString('pt-BR')} com uma pontuação final de <strong>${score}%</strong>.</p>
+                <p>
+                  concluiu com aproveitamento o treinamento de <strong>${courseTitle}</strong>,
+                  conforme determina a Portaria MT nº 3.214, de 8 de Junho de 1978, com carga horária de <strong>${duration} horas</strong>.
+                </p>
+                <p>Promovido pela <strong>Empilha Plus Treinamentos</strong>, CNPJ nº 35.077.899/0001-25.</p>
+                <p>Concluído em ${new Date().toLocaleDateString('pt-BR', {timeZone: 'America/Sao_Paulo'})} com pontuação final de <strong>${score}%</strong>.</p>
               </div>
-              <div class="cert-footer-wrapper">
+                            
+              <div class="cert-footer">
                 <div class="signature-block">
                   <div class="signature-line">
-                    <img src="${instructorSignatureUrl}" alt="Assinatura do Instrutor" class="signature-img"/>
+                    <img src="${instructorSignatureUrl}" class="signature-img" alt="Assinatura" />
                   </div>
                   <p>Rodrigo Vieira dos Santos</p>
-                  <span>23880 - MTE- RJ</span>
+                  <span>23880 - MTE/RJ</span>
                 </div>
                 <div class="signature-block">
                   <div class="signature-line"></div>
@@ -178,9 +191,15 @@ export const FinalTestPage: React.FC = () => {
                   <span>CPF: ${userCPF}</span>
                 </div>
               </div>
-              <p class="code-bottom">Código de Validação: ${certificateCode || 'N/A'}</p>
+              <div class="code-bottom">
+                Código de Validação: ${certificateCode || 'N/A'}
+              </div>
             </div>
+
             <div class="page syllabus-page page-break">
+              <div class="syllabus-header">
+                <img src="${logoUrl}" alt="Logo Empilha Plus" />
+              </div>
               <h2>Conteúdo Programático - ${courseTitle}</h2>
               <ul>${syllabusItems}</ul>
             </div>
@@ -188,7 +207,14 @@ export const FinalTestPage: React.FC = () => {
         </body>
       </html>
     `;
-    const options = { filename: `certificado_${user.name.replace(/\s/g, '_')}.pdf`, image: { type: 'jpeg' as const, quality: 1.0 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' as const } };
+
+    const options = {
+      filename: `certificado_${user.name.replace(/\s/g, '_')}.pdf`,
+      image: { type: 'jpeg' as const, quality: 1.0 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' as const },
+    };
+    
     html2pdf().from(content).set(options).save();
   };
 
@@ -238,7 +264,7 @@ export const FinalTestPage: React.FC = () => {
       </div>
     );
   }
-  
+ 
   if (!test) return <div className="text-white">Teste não encontrado para este curso.</div>;
 
   if (!testStarted) {
@@ -251,7 +277,7 @@ export const FinalTestPage: React.FC = () => {
           <li>Aprovação: <strong>{test.min_score}%</strong></li>
           <li>Marque apenas UMA alternativa por questão.</li>
         </ul>
-        <button onClick={() => setTestStarted(true)} className="w-full bg-secondary text-primary font-bold py-3 rounded-lg text-lg hover:bg-accent transition-colors">Começar Teste</button>
+        <button onClick={() => setTestStarted(true)} className="w-full bg-secondary text-primary font-bold py-3 px-6 rounded-lg text-lg hover:bg-accent transition-colors">Começar Teste</button>
       </div>
     );
   }
@@ -274,19 +300,19 @@ export const FinalTestPage: React.FC = () => {
         </div>
       );
   }
-  
+ 
   return (
     <div className="text-white space-y-6">
       <h1 className="text-3xl font-bold">{test.title}</h1>
       <div className="space-y-8">
         {test.questions.map((q: Question, index: number) => (
           <div key={index} className="bg-primary p-6 rounded-lg">
-            <p className="font-bold text-lg mb-4">{index + 1}. ${q.question}</p>
+            <p className="font-bold text-lg mb-4">{index + 1}. {q.question}</p>
             <div className="space-y-3">
-              {Object.entries(q.options).map(([key, value]: [string, unknown]) => (
+              {Object.entries(q.options).map(([key, value]) => (
                 <label key={key} className="flex items-center space-x-3 p-3 rounded-md hover:bg-background cursor-pointer">
                   <input type="radio" name={`question-${index}`} value={key} onChange={(e) => handleAnswerChange(index, e.target.value)} className="form-radio h-5 w-5 text-secondary bg-gray-800 border-gray-600 focus:ring-secondary" />
-                  <span>{value as React.ReactNode}</span>
+                  <span>{value}</span>
                 </label>
               ))}
             </div>
