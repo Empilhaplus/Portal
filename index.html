@@ -11,6 +11,7 @@
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Empilha+Plus | Portal de Treinamentos</title>
+    
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <meta name="description" content="Portal de treinamentos em Segurança do Trabalho, focado nas Normas Regulamentadoras." />
@@ -30,5 +31,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // O caminho '/sw.js' está correto, pois aponta para o arquivo na pasta /public
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('Service Worker registrado com sucesso:', registration);
+            })
+            .catch(error => {
+              console.log('Falha ao registrar Service Worker:', error);
+            });
+        });
+      }
+    </script>
+    </body>
 </html>
