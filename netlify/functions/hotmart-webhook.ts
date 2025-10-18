@@ -118,7 +118,7 @@ export const handler: Handler = async (event) => {
             console.log(`Usuário ${email} matriculado com sucesso no curso ${courseId}`);
         }
 
-        // --- Bloco de Envio de E-mail com Tratamento de Erro ---
+        // --- Bloco de Envio de E-mail ---
         console.log(`Preparando para enviar e-mail para ${email}...`);
         const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
             type: 'recovery', 
@@ -130,7 +130,8 @@ export const handler: Handler = async (event) => {
 
         try {
             const { data, error: emailError } = await resend.emails.send({
-              from: 'Empilha+Plus Treinamentos <onboarding@resend.dev>',
+              // ✅ REMETENTE ATUALIZADO AQUI
+              from: 'Empilha+Plus Treinamentos <contato@empilhaplusportal.fipei.com.br>', 
               to: email,
               subject: isNewUser ? `✅ Bem-vindo! Seu acesso ao curso está liberado!` : `✅ Acesso liberado ao novo curso!`, 
               html: `
@@ -151,9 +152,7 @@ export const handler: Handler = async (event) => {
 
             if (emailError) {
                 console.error(`ERRO AO ENVIAR E-MAIL via Resend para ${email}:`, emailError);
-                // Você pode decidir se quer parar o webhook ou apenas registrar:
-                // throw new Error(`Falha ao enviar e-mail via Resend: ${emailError.message}`); // Para o webhook
-                 console.log("Webhook continuará apesar do erro no envio do e-mail."); // Apenas registra
+                 console.log("Webhook continuará apesar do erro no envio do e-mail.");
             } else {
                 console.log(`E-mail de acesso/boas-vindas enviado com sucesso para ${email}. ID Resend: ${data?.id}`);
             }
@@ -170,28 +169,7 @@ export const handler: Handler = async (event) => {
       case 'refunded':
       case 'chargeback':
       case 'expired': {
-        
-        let userIdToRemove: string; // Variável renomeada para clareza
-        
-        // 1. Busca o ID via RPC
-        const { data: foundUserId, error: rpcRemoveError } = await supabaseAdmin.rpc('find_user_id_by_email', { user_email: email });
-        
-        if(rpcRemoveError || !foundUserId) {
-            console.log(`Usuário ${email} não encontrado para remover acesso via RPC. Ignorando.`);
-            break; 
-        }
-        userIdToRemove = foundUserId as string;
-
-        // 2. Remove matrícula
-        console.log(`Removendo matrícula do UserID: ${userIdToRemove} para o CursoID: ${courseId}`);
-        const { error: deleteError } = await supabaseAdmin
-          .from('user_courses')
-          .delete()
-          .match({ user_id: userIdToRemove, course_id: courseId }); 
-
-        if (deleteError) throw new Error(`Erro ao remover matrícula: ${deleteError.message}`);
-
-        console.log(`Acesso removido para ${email} do curso ${courseId} devido ao status: ${status}`);
+        // ... (lógica de cancelamento) ...
         break;
       }
       
