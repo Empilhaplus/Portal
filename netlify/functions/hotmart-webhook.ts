@@ -8,7 +8,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const webhookSecret = process.env.HOTMART_WEBHOOK_SECRET!;
 const resendApiKey = process.env.RESEND_API_KEY!;
 
-const supabase = createClient(supabaseUrl, serviceKey);
+const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 const resend = new Resend(resendApiKey);
 
 // Função de Mapeamento (sem alterações aqui)
@@ -61,73 +61,49 @@ export const handler: Handler = async (event) => {
       case 'approved':
       case 'aprovado': {
         
-        let userId: string;
+        let userId: string; // userId declared for this block
         let isNewUser = false;
 
-        // ✅ CORREÇÃO PRINCIPAL: Tentar criar primeiro, depois buscar se necessário
-        console.log(`Tentando criar/processar usuário para ${email}...`);
-        const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
-          email, 
-          email_confirm: true, // Já cria confirmado
-          user_metadata: { name: name }
-        });
+        console.log(`Verificando usuário ${email} via RPC...`);
+        const { data: foundUserId, error: rpcError } = await supabaseAdmin.rpc(
+            'find_user_id_by_email', { user_email: email }
+        );
 
-        if (createUserError && createUserError.message.includes('User already registered')) {
-            // SCENARIO 1: Usuário já existe. Precisamos buscar o ID dele na tabela profiles.
-            console.log(`Usuário ${email} já existe na autenticação. Buscando ID no perfil...`);
-            // IMPORTANTE: Assumimos que a tabela 'profiles' tem uma coluna 'id' que é a FK para auth.users.id
-            // E que você tem um trigger/RLS que copia o email ou que a busca pelo ID é suficiente.
-            // A busca mais segura aqui é pelo ID que *deveria* existir se o trigger funcionou.
-            // Vamos tentar buscar pelo email na tabela profiles, se ela tiver essa coluna.
-            // Se a tabela profiles NÃO tiver email, esta busca precisa ser ajustada.
-            const { data: existingProfile, error: profileError } = await supabase
-              .from('profiles')
-              .select('id') // Seleciona o ID do perfil (que deve ser o mesmo do auth.users)
-              .eq('email', email) // Tenta buscar pelo email, SE a coluna existir
-              .single();
+        if (rpcError) {
+             throw new Error(`Erro ao chamar RPC find_user_id_by_email: ${rpcError.message}`);
+        }
 
-            // Se a busca acima falhar porque a coluna email não existe em profiles,
-            // precisaremos de outra estratégia (talvez buscar todos os usuários via admin API e filtrar,
-            // ou garantir que a tabela profiles tenha o email).
-            // Por enquanto, vamos assumir que a busca acima funciona ou que o erro indicará o problema.
-
-            if (profileError || !existingProfile) {
-              // Tentativa alternativa: Buscar o usuário na auth DEPOIS do erro de criação
-              const { data: existingAuthUserRetry, error: retryAuthError } = await supabase.auth.admin.getUserById(
-                // Precisamos obter o ID de alguma forma. Se não temos o email em profiles, estamos bloqueados aqui.
-                // Vamos lançar um erro mais informativo por enquanto.
-                 "ID_DO_USUARIO_PRECISA_SER_OBTIDO_DE_ALGUMA_FORMA" 
-                 // Se você tiver o email na tabela profiles, pode usar existingProfile.id
-              );
-
-               if (retryAuthError || !existingAuthUserRetry?.user) {
-                 throw new Error(`Erro Crítico de Sincronização: Usuário ${email} existe (auth) mas ID não pôde ser recuperado via perfil/retry.`);
-               }
-               userId = existingAuthUserRetry.user.id;
-               console.log(`ID recuperado via retry na auth: ${userId}`);
-
-            } else {
-               userId = existingProfile.id; // Usa o ID encontrado no perfil
-               console.log(`ID encontrado no perfil existente: ${userId}`);
-            }
-
-        } else if (createUserError) {
-            // SCENARIO 2: Outro erro durante a criação.
-            throw new Error(`Erro ao criar usuário: ${createUserError.message}`);
-        
-        } else if (!newUser || !newUser.user) {
-            // SCENARIO 3: Criação bem-sucedida, mas não retornou dados.
-            throw new Error('Criação do usuário não retornou os dados esperados.');
-        
+        if (foundUserId) {
+            userId = foundUserId as string;
+            console.log(`Cliente existente encontrado via RPC: ${email}, ID: ${userId}`);
         } else {
-            // SCENARIO 4: Criação bem-sucedida! Usuário é novo.
-            userId = newUser.user.id;
-            isNewUser = true;
-            console.log(`Novo usuário criado com ID: ${userId}`);
+            console.log(`Usuário ${email} não encontrado via RPC. Criando novo usuário...`);
+            const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+              email, email_confirm: true, user_metadata: { name: name }
+            });
+
+            if (createUserError) {
+              if (createUserError.message.includes('User already registered')) {
+                  console.warn(`Criação falhou (usuário já existe), tentando buscar via RPC novamente...`);
+                  const { data: retryUserId, error: retryError } = await supabaseAdmin.rpc('find_user_id_by_email', { user_email: email });
+                  if (retryError || !retryUserId) {
+                      throw new Error(`Erro Crítico de Sincronização: Usuário ${email} existe mas não foi encontrado na retentativa RPC.`);
+                  }
+                  userId = retryUserId as string;
+              } else {
+                  throw new Error(`Erro ao criar usuário: ${createUserError.message}`);
+              }
+            } else if (!newUser || !newUser.user) {
+              throw new Error('Criação do usuário não retornou os dados esperados.');
+            } else {
+              userId = newUser.user.id;
+              isNewUser = true;
+              console.log(`Novo usuário criado com ID: ${userId}`);
+            }
         }
         
-        // 2. Matricula o usuário no curso correto
-        const { error: enrollmentError } = await supabase
+        console.log(`Matriculando UserID: ${userId} no CursoID: ${courseId}`);
+        const { error: enrollmentError } = await supabaseAdmin
           .from('user_courses')
           .insert({ user_id: userId, course_id: courseId });
         
@@ -141,9 +117,8 @@ export const handler: Handler = async (event) => {
             console.log(`Usuário ${email} matriculado com sucesso no curso ${courseId}`);
         }
 
-        // 3. Envia o e-mail de boas-vindas APENAS se for um usuário novo
         if (isNewUser) {
-            const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+             const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
                 type: 'recovery', email: email,
             });
             if (linkError) throw new Error(`Erro ao gerar link de acesso: ${linkError.message}`);
@@ -154,16 +129,38 @@ export const handler: Handler = async (event) => {
               from: 'Empilha+Plus Treinamentos <onboarding@resend.dev>',
               to: email,
               subject: `✅ Seu acesso ao curso está liberado!`,
-              html: `... (seu HTML de e-mail aqui) ...`
+              html: `... (seu HTML de e-mail aqui) ...` 
             });
             console.log(`E-mail de boas-vindas enviado para ${email}`);
         }
         break;
       }
       
-      case 'canceled': // ... (lógica de cancelamento precisa ser revisada também)
-      // ...
+      case 'canceled':
+      case 'refunded':
+      case 'chargeback':
+      case 'expired': {
+        
+        // 1. Busca o ID via RPC
+        const { data: removeUserId, error: rpcRemoveError } = await supabaseAdmin.rpc('find_user_id_by_email', { user_email: email });
+        
+        if(rpcRemoveError || !removeUserId) {
+            console.log(`Usuário ${email} não encontrado para remover acesso via RPC. Ignorando.`);
+            break; // Sai do case se o usuário não for encontrado
+        }
+        
+        // ✅ CORREÇÃO APLICADA AQUI: Usar a variável correta 'removeUserId'
+        // 2. Remove matrícula usando o ID encontrado
+        const { error: deleteError } = await supabaseAdmin
+          .from('user_courses')
+          .delete()
+          .match({ user_id: removeUserId, course_id: courseId }); // Usando removeUserId aqui
+
+        if (deleteError) throw new Error(`Erro ao remover matrícula: ${deleteError.message}`);
+
+        console.log(`Acesso removido para ${email} do curso ${courseId} devido ao status: ${status}`);
         break;
+      }
       
       default:
         console.log(`Evento com status "${status}" recebido e ignorado.`);
@@ -174,6 +171,6 @@ export const handler: Handler = async (event) => {
   } catch (err) {
     const error = err as Error;
     console.error('Erro geral no webhook:', error.message);
-    return { statusCode: 500, body: 'Erro interno do servidor.' };
+    return { statusCode: 500, body: `Erro interno do servidor: ${error.message}` };
   }
 };
