@@ -11,17 +11,18 @@ const resendApiKey = process.env.RESEND_API_KEY!;
 const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 const resend = new Resend(resendApiKey);
 
-// Função de Mapeamento (sem alterações aqui)
+// Função de Mapeamento (Preencha com seus IDs)
 function getCourseIdFromHotmartProductId(productId: number): string | null {
   if (productId === 6457666) { 
-    return '9adbbcb4-63dc-4521-9e7d-20cd62259f4a';
+    return '9adbbcb4-63dc-4521-9e7d-20cd62259f4a'; // NR-06
   }
-  if (productId === 445566) {
-    return '05b91c42-fffb-4836-88e8-3325347c3b63';
+  if (productId === 445566) { // Substitua pelo ID real do NR-10 Básico
+    return '05b91c42-fffb-4836-88e8-3325347c3b63'; // NR-10 Básico UUID
   }
-  if (productId === 778899) {
-    return '1729ba53-3d7c-4b07-aedd-d57b7ece4e2a';
+  if (productId === 778899) { // Substitua pelo ID real do NR-10 SEP
+    return '1729ba53-3d7c-4b07-aedd-d57b7ece4e2a'; // NR-10 SEP UUID
   }
+  // Adicione outros cursos aqui...
   console.warn(`Produto da Hotmart com ID ${productId} não foi mapeado.`);
   return null;
 }
@@ -62,7 +63,7 @@ export const handler: Handler = async (event) => {
       case 'aprovado': {
         
         let userId: string;
-        let isNewUser = false; // Continuamos a rastrear se é novo, mas não limitamos o e-mail
+        let isNewUser = false; 
 
         console.log(`Verificando usuário ${email} via RPC...`);
         const { data: foundUserId, error: rpcError } = await supabaseAdmin.rpc(
@@ -97,7 +98,7 @@ export const handler: Handler = async (event) => {
               throw new Error('Criação do usuário não retornou os dados esperados.');
             } else {
               userId = newUser.user.id;
-              isNewUser = true; // Marca como novo aqui
+              isNewUser = true; 
               console.log(`Novo usuário criado com ID: ${userId}`);
             }
         }
@@ -117,45 +118,82 @@ export const handler: Handler = async (event) => {
             console.log(`Usuário ${email} matriculado com sucesso no curso ${courseId}`);
         }
 
-        // ✅ CORREÇÃO APLICADA: Bloco de envio de e-mail agora está FORA do 'if (isNewUser)'
-        // 3. Envia o e-mail de acesso/boas-vindas SEMPRE que a compra for aprovada
+        // --- Bloco de Envio de E-mail com Tratamento de Erro ---
         console.log(`Preparando para enviar e-mail para ${email}...`);
         const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-            type: 'recovery', // Link de recuperação funciona para novos e existentes
+            type: 'recovery', 
             email: email,
         });
         if (linkError) throw new Error(`Erro ao gerar link de acesso: ${linkError.message}`);
         
         const magicLink = linkData.properties.action_link;
 
-        await resend.emails.send({
-          from: 'Empilha+Plus Treinamentos <onboarding@resend.dev>',
-          to: email,
-          // Você pode querer ajustar o assunto se o usuário não for novo
-          subject: isNewUser ? `✅ Bem-vindo! Seu acesso ao curso está liberado!` : `✅ Acesso liberado ao novo curso!`, 
-          html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #333;">
-              <h2 style="color: #0AFF0F;">🎉 Olá, ${name}!</h2>
-              <p>Seu acesso ao curso foi liberado com sucesso em nosso portal.</p>
-              <p>Clique no botão abaixo para acessar o portal. Se for seu primeiro acesso ou você esqueceu sua senha, este link permitirá que você defina/redefina sua senha.</p>
-              <p style="margin: 30px 0;">
-                <a href="${magicLink}" style="background-color: #0AFF0F; color: #000; padding: 15px 25px; text-decoration: none; font-weight: bold; border-radius: 5px;">
-                  ACESSAR O PORTAL
-                </a>
-              </p>
-              <p>Seu login é sempre o seu e-mail: <strong>${email}</strong></p>
-              <br>
-              <p>💚 Bons estudos!</p>
-            </div>`
-        });
-        console.log(`E-mail de acesso/boas-vindas enviado para ${email}`);
+        try {
+            const { data, error: emailError } = await resend.emails.send({
+              from: 'Empilha+Plus Treinamentos <onboarding@resend.dev>',
+              to: email,
+              subject: isNewUser ? `✅ Bem-vindo! Seu acesso ao curso está liberado!` : `✅ Acesso liberado ao novo curso!`, 
+              html: `
+                <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                  <h2 style="color: #0AFF0F;">🎉 Olá, ${name}!</h2>
+                  <p>Seu acesso ao curso foi liberado com sucesso em nosso portal.</p>
+                  <p>Clique no botão abaixo para acessar o portal. Se for seu primeiro acesso ou você esqueceu sua senha, este link permitirá que você defina/redefina sua senha.</p>
+                  <p style="margin: 30px 0;">
+                    <a href="${magicLink}" style="background-color: #0AFF0F; color: #000; padding: 15px 25px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+                      ACESSAR O PORTAL
+                    </a>
+                  </p>
+                  <p>Seu login é sempre o seu e-mail: <strong>${email}</strong></p>
+                  <br>
+                  <p>💚 Bons estudos!</p>
+                </div>` // Mantenha ou ajuste seu HTML aqui
+            });
+
+            if (emailError) {
+                console.error(`ERRO AO ENVIAR E-MAIL via Resend para ${email}:`, emailError);
+                // Você pode decidir se quer parar o webhook ou apenas registrar:
+                // throw new Error(`Falha ao enviar e-mail via Resend: ${emailError.message}`); // Para o webhook
+                 console.log("Webhook continuará apesar do erro no envio do e-mail."); // Apenas registra
+            } else {
+                console.log(`E-mail de acesso/boas-vindas enviado com sucesso para ${email}. ID Resend: ${data?.id}`);
+            }
+        } catch (resendCatchError) {
+            console.error(`ERRO INESPERADO ao tentar enviar e-mail para ${email}:`, resendCatchError);
+             console.log("Webhook continuará apesar do erro inesperado no envio do e-mail.");
+        }
+        // --- Fim do Bloco de Envio de E-mail ---
         
         break; // Fim do case 'approved'
       }
       
-      case 'canceled': // ... (Lógica de cancelamento)
-      // ...
+      case 'canceled':
+      case 'refunded':
+      case 'chargeback':
+      case 'expired': {
+        
+        let userIdToRemove: string; // Variável renomeada para clareza
+        
+        // 1. Busca o ID via RPC
+        const { data: foundUserId, error: rpcRemoveError } = await supabaseAdmin.rpc('find_user_id_by_email', { user_email: email });
+        
+        if(rpcRemoveError || !foundUserId) {
+            console.log(`Usuário ${email} não encontrado para remover acesso via RPC. Ignorando.`);
+            break; 
+        }
+        userIdToRemove = foundUserId as string;
+
+        // 2. Remove matrícula
+        console.log(`Removendo matrícula do UserID: ${userIdToRemove} para o CursoID: ${courseId}`);
+        const { error: deleteError } = await supabaseAdmin
+          .from('user_courses')
+          .delete()
+          .match({ user_id: userIdToRemove, course_id: courseId }); 
+
+        if (deleteError) throw new Error(`Erro ao remover matrícula: ${deleteError.message}`);
+
+        console.log(`Acesso removido para ${email} do curso ${courseId} devido ao status: ${status}`);
         break;
+      }
       
       default:
         console.log(`Evento com status "${status}" recebido e ignorado.`);
