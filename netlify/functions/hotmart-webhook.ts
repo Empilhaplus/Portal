@@ -16,11 +16,42 @@ function getCourseIdFromHotmartProductId(productId: number): string | null {
   if (productId === 6457666) { 
     return '9adbbcb4-63dc-4521-9e7d-20cd62259f4a'; // NR-06
   }
-  if (productId === 445566) { // Substitua pelo ID real do NR-10 Básico
+  if (productId === 6475697) { // Substitua pelo ID real do NR-10 Básico
     return '05b91c42-fffb-4836-88e8-3325347c3b63'; // NR-10 Básico UUID
   }
-  if (productId === 778899) { // Substitua pelo ID real do NR-10 SEP
+  if (productId === 6475285) { // Substitua pelo ID real do NR-01
+    return 'a9de04a3-e0f7-4ac1-a303-3b980a62c80c'; // NR-01 UUID
+  }
+  if (productId === 6508848) { // Substitua pelo ID real do NR-10 SEP
     return '1729ba53-3d7c-4b07-aedd-d57b7ece4e2a'; // NR-10 SEP UUID
+  }
+  if (productId === 6508941) { // Substitua pelo ID real do NR-11
+    return '8d4dc6cc-3ec2-4a5f-b62c-f42fb6aebd23'; // NR-11 UUID
+  }
+  if (productId === 6509913) { // Substitua pelo ID real do NR-12
+    return '950d17c6-dc4c-4b4c-a414-c18d32159c2a'; // NR-12 UUID
+  }if (productId === 6509949) { // Substitua pelo ID real do NR-16
+    return '25ca194d-837e-4890-82ae-f0782fd515dc'; // NR-16 UUID
+  }
+  if (productId === 6509974) { // Substitua pelo ID real do NR-18
+    return 'd9d502c6-2f5f-4bb9-af90-9cdb23bd2ab3'; // NR-18 UUID
+  }
+  if (productId === 6510009) { // Substitua pelo ID real do NR-20
+    return '8feeab8f-08b7-4761-b1ec-a9dd79570177'; // NR-20 UUID
+  }if (productId === 6510031) { // Substitua pelo ID real do NR-33
+    return 'd1f17359-c9cc-48e1-90ed-af590832d162'; // NR-33 UUID
+  }
+  if (productId === 6510064) { // Substitua pelo ID real do NR-34
+    return '4d7128f0-bff9-405c-b002-58b77d78ab21'; // NR-34 UUID
+  }
+  if (productId === 6510080) { // Substitua pelo ID real do NR-35
+    return 'c075f4dd-4e54-4f15-bd18-2d7580765944'; // NR-35 UUID
+  }
+  if (productId === 6510193) { // Substitua pelo ID real do NR-36
+    return 'f24c050c-5121-4765-bae2-b847c8515850'; // NR-36 UUID
+  }
+  if (productId === 9999999) { // Substitua pelo ID real do NR-37
+    return '111111111111111111111111111111111111'; // NR-37 UUID
   }
   // Adicione outros cursos aqui...
   console.warn(`Produto da Hotmart com ID ${productId} não foi mapeado.`);
