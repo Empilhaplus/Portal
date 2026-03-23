@@ -155,6 +155,7 @@ export const CertificatesPage: React.FC = () => {
                  </div>
                  ${validityInfo ? `<div class="validity-info">${validityInfo}</div>` : ''}
               </div>
+              
             </div>
 
             <div class="page syllabus-page page-break"> 
