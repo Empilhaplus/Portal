@@ -137,7 +137,7 @@ export const CertificatesPage: React.FC = () => {
               <div class="cert-footer">
                 <div class="signature-block">
                   <div class="signature-line">
-                    <img src="${instructorSignatureUrl}" class="signature-img" alt="Instrutor e responsável Técnico" />
+                    <img src="${instructorSignatureUrl}" class="signature-img" alt="Assinatura Instrutor" />
                   </div>
                   <p>Rodrigo Vieira dos Santos</p>
                   <span>23880 - MTE/RJ</span>
